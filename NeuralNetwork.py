@@ -9,7 +9,7 @@ class output_layer():
     def forwarding(self, x):        
         if self.weights is None:                        
             w_dim = x.shape[1]
-            n_dim = x.shape[0]
+            n_dim = 1
             sigma = np.sqrt(2 / (w_dim + n_dim))
             self.weights = np.random.normal(loc=0, scale=sigma, size=[w_dim, 1])
             self.bias = np.zeros((1, 1))
@@ -29,7 +29,7 @@ class NeuralNetwork:
         if self.weights is None:
             w_dim = x.shape[1]
             n_dim = 2 ** w_dim
-            sigma = np.sqrt(2 / (x.shape[1] + x.shape[0]))
+            sigma = np.sqrt(2 / (w_dim + n_dim))
             self.weights = np.random.normal(loc=0, scale=sigma, size=[w_dim,n_dim])
             self.bias = np.zeros((1, n_dim))
             self.ol = output_layer()
