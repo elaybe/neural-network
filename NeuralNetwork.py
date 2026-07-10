@@ -30,7 +30,6 @@ class layer():
         learning_rate = 0.01
 
         for layer in reversed(layers):
-
             if layer is self:
                 dl_da = layer.a - layer.y
                 da_dz = layer.a * (1 - layer.a)
@@ -38,22 +37,25 @@ class layer():
                 dz_dw = layer.x
 
                 dl_dz = dl_da * da_dz
+                
                 delta = dl_dz @ dz_da.T
-                gradient_equation = dl_dz.T @ dz_dw
-                db = np.sum(dl_dz, axis=0, keepdims=True)
+                
+                layer.weights -= learning_rate * (dl_dz.T @ dz_dw).T
+                layer.bias -= learning_rate * np.sum(dl_dz, axis=0, keepdims=True)
+                
                 loss = 1/2 * np.mean((layer.y - layer.a) ** 2)
-
             else:
                 da_dz = layer.a * (1 - layer.a)
                 dz_da = layer.weights.T
                 dz_dw = layer.x
-                gradient_equation = delta.T @ dz_dw
-                db = np.sum(delta, axis=0, keepdims=True)
+                
+                current_delta = delta
+                
                 delta = delta * da_dz @ dz_da 
                 
-            layer.weights = layer.weights - learning_rate * gradient_equation.T
-            layer.bias = layer.bias - learning_rate * db
-            
+                layer.weights -= learning_rate * (current_delta.T @ dz_dw).T
+                layer.bias -= learning_rate * np.sum(current_delta * da_dz, axis=0, keepdims=True)
+
         return loss
 
 if __name__ == "__main__":
@@ -76,7 +78,7 @@ if __name__ == "__main__":
 
     layers = np.array([hidden_layer1, hidden_layer2, hidden_layer3, output_layer])
 
-    for epoch in range(1000):
+    for epoch in range(100000):
         loss = hidden_layer1.forwarding(layers)
         if epoch % 100 == 0:
             print(f"Epoch {epoch}, Loss: {loss}")
