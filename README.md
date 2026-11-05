@@ -89,8 +89,9 @@ Bias values are initialized to zero.
 
 ## Verification
 
-- The analytical gradients of the first layer's weights were checked against numerical
+- The analytical gradients of all layers' weights and biases are checked against numerical
   gradients on a 3-layer network, with a maximum absolute difference of about `1e-10`.
+  Run the check with: `python test_gradients.py`
 - In one example run, the printed loss fell from about `0.12` to about `0.00005`
   after 100,000 epochs.
 
@@ -103,4 +104,3 @@ It does not measure generalization.
 - The only training method is full-batch gradient descent.
 - There is no train/test split or real-dataset evaluation.
 - No random seed is set, so results vary between runs.
-- Gradient checking is not yet included as an automated test in this repository.
