@@ -49,10 +49,11 @@ class layer():
                 dz_da = layer.weights.T
                 dz_dw = layer.x
                 
-                layer.weights -= learning_rate * (delta.T @ dz_dw).T
-                layer.bias -= learning_rate * np.sum(delta * da_dz, axis=0, keepdims=True)
+                dl_dz = delta * da_dz
+                delta = dl_dz @ dz_da
                 
-                delta = delta * da_dz @ dz_da 
+                layer.weights -= learning_rate * (dl_dz.T @ dz_dw).T
+                layer.bias -= learning_rate * np.sum(dl_dz, axis=0, keepdims=True)
 
         return loss
 
