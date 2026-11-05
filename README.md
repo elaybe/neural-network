@@ -1,84 +1,106 @@
-# Mathematically Rigorous MLP from Scratch (NumPy)
+# Neural Network from Scratch
 
-A highly optimized, dynamically initialized Multi-Layer Perceptron (MLP) architecture featuring complete forward and backward propagation, built entirely from scratch using NumPy. 
+A fully connected neural network (multilayer perceptron) implemented in NumPy, with
+forward propagation and backpropagation derived and written by hand.
 
-This implementation represents a rigorous translation of matrix calculus into computational code. It features dynamic weight dimensioning, a vectorized structural loop for arbitrary layer depths, and strict compliance with the chain rule for matrix gradients to avoid broadcasting anomalies during batch updates.
+The goal of this project is to understand how backpropagation works at the matrix level.
+It is an educational implementation, not a production library.
 
----
+## Features
 
-## 1. Linear Algebra & Matrix Multiplication Compliance
+- Vectorized forward and backward passes
+- Configurable number of layers and neurons
+- Weight dimensions inferred from the input at the first forward pass
+- Xavier/Glorot normal weight initialization
+- Sigmoid activation in all layers
+- Full-batch gradient descent
 
-To process an entire batch of inputs simultaneously without nested loops, the network strictly complies with the fundamental laws of matrix calculus:
-Given $A \in \mathbb{R}^{m \times n}$ and $B \in \mathbb{R}^{p \times q}$, the product $A \cdot B$ is defined if and only if $n = p$. The resulting matrix dimensions are strictly: $\text{Output} \in \mathbb{R}^{m \times q}$.
+## Quick Start
 
----
+Requires Python 3 and NumPy.
 
-## 2. Forward Propagation Mechanics
+```bash
+pip install numpy
+python NeuralNetwork.py
+```
 
-### Input & Hidden Representation
-The network accepts a dynamic batch of data $X \in \mathbb{R}^{m \times d}$ where $m$ is the batch size and $d$ is the number of input features. For any given layer $L$ with $N$ neurons, receiving inputs from a preceding layer with $K$ features:
+The script trains the network on a small example and prints the loss every 100 epochs.
 
-* **Weight Matrix ($W^{(L)}$):** Maps the input features to the neuron space. 
-  $$W^{(L)} \in \mathbb{R}^{K \times N}$$
-* **Bias Vector ($b^{(L)}$):** Formatted as a row vector to facilitate proper row-wise broadcasting across the batch.
-  $$b^{(L)} \in \mathbb{R}^{1 \times N}$$
+## Default Network
 
-### Layer-by-Layer Equations (Vectorized)
-For each layer, the pre-activation matrix $Z^{(L)}$ and the post-activation matrix $A^{(L)}$ are evaluated via the element-wise Logistic Sigmoid function:
+| Layer | Neurons | Activation |
+|---|---|---|
+| Hidden 1 | 30 | Sigmoid |
+| Hidden 2 | 30 | Sigmoid |
+| Hidden 3 | 30 | Sigmoid |
+| Output | 10 | Sigmoid |
 
-$$Z^{(L)} = A^{(L-1)} \cdot W^{(L)} + b^{(L)}$$
+The input has 3 samples with 4 features each. The learning rate is 0.01.
+
+## How It Works
+
+### Forward Propagation
+
+For layer $L$, with $A^{(0)} = X$:
+
+$$Z^{(L)} = A^{(L-1)} W^{(L)} + b^{(L)}$$
+
 $$A^{(L)} = \sigma(Z^{(L)}) = \frac{1}{1 + e^{-Z^{(L)}}}$$
 
-### Dimensions Check for the Configured 4-Layer Network
-Given $m = 3$ samples, $d = 4$ features, 3 hidden layers with $30$ neurons each, and $10$ output neurons:
-* **Layer 1 (Hidden):** $[3 \times 4] \cdot [4 \times 30] + [1 \times 30] = [3 \times 30] \rightarrow A^{(1)} \in \mathbb{R}^{3 \times 30}$
-* **Layer 2 (Hidden):** $[3 \times 30] \cdot [30 \times 30] + [1 \times 30] = [3 \times 30] \rightarrow A^{(2)} \in \mathbb{R}^{3 \times 30}$
-* **Layer 3 (Hidden):** $[3 \times 30] \cdot [30 \times 30] + [1 \times 30] = [3 \times 30] \rightarrow A^{(3)} \in \mathbb{R}^{3 \times 30}$
-* **Layer 4 (Output):** $[3 \times 30] \cdot [30 \times 10] + [1 \times 10] = [3 \times 10] \rightarrow A^{(4)} \in \mathbb{R}^{3 \times 10}$
+### Loss
 
----
+The gradients are computed for the summed squared error:
 
-## 3. Backpropagation & Matrix Calculus Derivation
+$$L = \frac{1}{2} \sum_{i,j} \left(A^{(out)}_{ij} - Y_{ij}\right)^2$$
 
-The backward pass evaluates the exact analytical gradients of the Mean Squared Error (MSE) loss function with respect to all trainable parameters by traversing the layers in reverse order (`reversed(layers)`).
+The value printed during training is the mean version of this loss, used for monitoring only.
 
-#### Loss Function
-$$L = \frac{1}{2m} \sum_{i=1}^{m} (A^{(out)} - Y)^2$$
+### Backpropagation
 
-#### Full Chain Rule Expansion for Deep Hidden Layers
-As visualized in the architectural mathematical derivation, the gradient of the loss with respect to the weights of a deep hidden layer ($W^{(1)}$) expands fully through every single transition vector via element-wise and matrix dot products:
+Define the gradient of the loss with respect to each layer's pre-activation as:
 
-$$\frac{\partial L}{\partial W^{(1)}} = \frac{\partial L}{\partial \hat{a}} \odot \frac{\partial \hat{a}}{\partial Z^{(4)}} \cdot \frac{\partial Z^{(4)}}{\partial A^{(3)}} \odot \frac{\partial A^{(3)}}{\partial Z^{(3)}} \cdot \frac{\partial Z^{(3)}}{\partial A^{(2)}} \odot \frac{\partial A^{(2)}}{\partial Z^{(2)}} \cdot \frac{\partial Z^{(2)}}{\partial A^{(1)}} \odot \frac{\partial A^{(1)}}{\partial Z^{(1)}} \cdot \frac{\partial Z^{(1)}}{\partial W^{(1)}}$$
+$$\delta^{(L)} = \frac{\partial L}{\partial Z^{(L)}}$$
 
-#### Output Layer Gradients ($L = \text{Output}$)
-Applying the chain rule to compute the error gradient relative to the linear combination $Z^{(out)}$:
-$$\delta^{(out)} = \frac{\partial L}{\partial Z^{(out)}} = \frac{\partial L}{\partial A^{(out)}} \odot \sigma'(Z^{(out)})$$
-$$\delta^{(out)} = (A^{(out)} - Y) \odot \left( A^{(out)} \odot (1 - A^{(out)}) \right)$$
+For the output layer:
 
-#### Hidden Layer Gradients & Error Propagation
-For any hidden layer, the error gradient $\delta^{(L)}$ depends on the accumulated gradient from the subsequent layer $\delta^{(L+1)}$ and the **original** un-updated weights $W^{(L+1)}$:
+$$\delta^{(out)} = (A^{(out)} - Y) \odot A^{(out)} \odot (1 - A^{(out)})$$
 
-$$\delta^{(L)} = \frac{\partial L}{\partial Z^{(L)}} = \left( \delta^{(L+1)} \cdot (W^{(L+1)})^T \right) \odot \left( A^{(L)} \odot (1 - A^{(L)}) \right)$$
+For a hidden layer:
 
-#### Parameter Gradient Evaluation & Optimization Updates
-Once $\delta^{(L)}$ is explicitly isolated for any layer, the weight and bias gradients are evaluated via matrix transposition to match parameter dimensions exactly, preventing premature weight corruption by storing state variables locally:
+$$\delta^{(L)} = \left(\delta^{(L+1)} (W^{(L+1)})^T\right) \odot A^{(L)} \odot (1 - A^{(L)})$$
 
-$$\frac{\partial L}{\partial W^{(L)}} = (A^{(L-1)})^T \cdot \delta^{(L)}$$
-$$\frac{\partial L}{\partial b^{(L)}} = \sum_{\text{rows}} \delta^{(L)}$$
+The parameter gradients are:
 
-The optimization step updates the parameters via Gradient Descent given a learning rate $\eta$:
-$$W^{(L)} \leftarrow W^{(L)} - \eta \cdot \frac{\partial L}{\partial W^{(L)}}$$
-$$b^{(L)} \leftarrow b^{(L)} - \eta \cdot \frac{\partial L}{\partial b^{(L)}}$$
+$$\frac{\partial L}{\partial W^{(L)}} = (A^{(L-1)})^T \delta^{(L)}$$
 
----
+$$\frac{\partial L}{\partial b^{(L)}} = \sum_{i} \delta^{(L)}_{i}$$
 
-## 4. Normalized Xavier/Glorot Initialization
+### Parameter Update
 
-To prevent vanishing or exploding gradients across deep configurations, weights are drawn from a normal distribution scaled dynamically by the input connectivity ($\text{fan}_{\text{in}}$) and output connectivity ($\text{fan}_{\text{out}}$) of each specific layer:
+$$W^{(L)} \leftarrow W^{(L)} - \eta \frac{\partial L}{\partial W^{(L)}}$$
 
-$$\sigma_{\text{init}} = \sqrt{\frac{2}{\text{fan}_{\text{in}} + \text{fan}_{\text{out}}}}$$
+$$b^{(L)} \leftarrow b^{(L)} - \eta \frac{\partial L}{\partial b^{(L)}}$$
 
-```python
-sigma = np.sqrt(2 / (col + self.neurons))
-self.weights = np.random.normal(loc=0, scale=sigma, size=[col, self.neurons])
-self.bias = np.zeros((1, self.neurons))
+### Weight Initialization
+
+$$W^{(L)} \sim \mathcal{N}\left(0, \frac{2}{n_{in} + n_{out}}\right)$$
+
+Bias values are initialized to zero.
+
+## Verification
+
+- The analytical gradients of the first layer's weights were checked against numerical
+  gradients on a 3-layer network, with a maximum absolute difference of about `1e-10`.
+- In one example run, the printed loss fell from about `0.12` to about `0.00005`
+  after 100,000 epochs.
+
+The example has only 3 samples, so this confirms that the computation works.
+It does not measure generalization.
+
+## Limitations
+
+- Sigmoid is the only activation function.
+- The only training method is full-batch gradient descent.
+- There is no train/test split or real-dataset evaluation.
+- No random seed is set, so results vary between runs.
+- Gradient checking is not yet included as an automated test in this repository.
